@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: triton-inference-deployment
+  name: triton-deployment
   labels:
-    app: triton-inference
+    app: triton
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: triton-inference
+      app: triton
   template:
     metadata:
       labels:
-        app: triton-inference
+        app: triton
     spec:
       containers:
       - name: triton-server
@@ -34,15 +34,15 @@ spec:
       - name: model-repository
         nfs:
           server: 141.223.124.61
-          path: /nfs_data/examples/model_repository
+          path: /nfs_docker/data/triton_model_repository
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: triton-inference-service
+  name: triton-service
 spec:
   selector:
-    app: triton-inference
+    app: triton
   ports:
   - name: http
     protocol: TCP
