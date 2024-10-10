@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: triton-inference-deployment
+  labels:
+    app: triton-inference
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: triton-inference
+  template:
+    metadata:
+      labels:
+        app: triton-inference
+    spec:
+      containers:
+      - name: triton-server
+        image: nvcr.io/nvidia/tritonserver:23.01-py3
+        ports:
+        - containerPort: 8000  # http port
+        - containerPort: 8001  # gRPC port
+        - containerPort: 8002  # Metrics port
+        args:
+        - tritonserver
+        - '--model-repository=/models'
+        resources:
+          limits:
+            nvidia.com/gpu: 1  # Use 1 GPU, remove this line if using CPU-only
+        volumeMounts:
+        - name: model-repository
+          mountPath: /models
+      volumes:
+      - name: model-repository
+        nfs:
+          server: 141.223.124.61
+          path: /nfs_data/examples/model_repository
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: triton-inference-service
+spec:
+  selector:
+    app: triton-inference
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8000  # Expose http port
+    targetPort: 8000
+  # - name: grpc
+  #   protocol: TCP
+  #   port: 8001  # Expose gRPC port
+  #   targetPort: 8001
+  - name: metrics
+    protocol: TCP
+    port: 8002  # Expose Metrics port
+    targetPort: 8002
+  type: LoadBalancer  # Change to NodePort if not using a cloud provider with LoadBalancer support
