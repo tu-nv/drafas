@@ -14,6 +14,7 @@ spec:
       labels:
         app: triton
     spec:
+      runtimeClassName: nvidia
       containers:
       - name: triton-server
         image: nvcr.io/nvidia/tritonserver:23.01-py3
@@ -27,6 +28,8 @@ spec:
         resources:
           limits:
             nvidia.com/gpu: 1  # Use 1 GPU, remove this line if using CPU-only
+          requests:
+            nvidia.com/gpu: 1
         volumeMounts:
         - name: model-repository
           mountPath: /models

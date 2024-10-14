@@ -14,6 +14,7 @@ spec:
       labels:
         app: whisper
     spec:
+      runtimeClassName: nvidia
       containers:
       - name: whisper-container
         image: onerahmet/openai-whisper-asr-webservice:latest-gpu
@@ -22,6 +23,8 @@ spec:
         resources:
           limits:
             nvidia.com/gpu: 1  # Uncomment if GPU is needed; requires GPU nodes
+          requests:
+            nvidia.com/gpu: 1
         env:
         - name: ASR_MODEL
           value: "base"  # Choose the Whisper model size (tiny, base, small, medium, large)
