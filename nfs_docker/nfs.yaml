@@ -1,0 +1,24 @@
+version: '3'
+services:
+  nfs:
+    image: erichough/nfs-server
+    volumes:
+      # we can mount the repo dir to other machine so we dont need to manually sync repo copy
+      - ../:/nfs/drafas
+      - /lib/modules:/lib/modules:ro
+    environment:
+    # do not use quote
+    # https://github.com/ehough/docker-nfs-server/issues/13
+    # nfsv4 need a root exports
+    # https://github.com/ehough/docker-nfs-server/issues/58
+      - NFS_EXPORT_0=/nfs/drafas *(fsid=0,rw,no_subtree_check)
+      - NFS_EXPORT_1=/nfs/drafas/nfs_docker/data *(rw,sync,no_subtree_check)
+      # - NFS_EXPORT_2=/nfs/drafas *(rw,sync,no_subtree_check)
+      - NFS_DISABLE_VERSION_3=1
+    cap_add:
+      - SYS_ADMIN
+      - SYS_MODULE
+    # ports:
+    #   - 2049:2049
+    network_mode: "host"
+    privileged: true
