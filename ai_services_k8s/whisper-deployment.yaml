@@ -18,6 +18,7 @@ spec:
       containers:
       - name: whisper-container
         image: onerahmet/openai-whisper-asr-webservice:latest-gpu
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9000
         resources:

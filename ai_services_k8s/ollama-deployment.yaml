@@ -18,6 +18,7 @@ spec:
       containers:
       - name: ollama-server
         image: nvantu/drafas-ollama:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 11434  # Port where Ollama listens for requests
         resources:

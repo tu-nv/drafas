@@ -17,7 +17,8 @@ spec:
       runtimeClassName: nvidia
       containers:
       - name: triton-server
-        image: nvcr.io/nvidia/tritonserver:23.01-py3
+        image: nvantu/drafas-triton
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000  # http port
         - containerPort: 8001  # gRPC port
@@ -25,20 +26,11 @@ spec:
         args:
         - tritonserver
         - '--model-repository=/models'
-        - '--log-verbose=1'
         resources:
           limits:
             nvidia.com/gpu: 1  # Use 1 GPU, remove this line if using CPU-only
           requests:
             nvidia.com/gpu: 1
-        volumeMounts:
-        - name: model-repository
-          mountPath: /models
-      volumes:
-      - name: model-repository
-        nfs:
-          server: 141.223.124.61
-          path: /nfs_docker/data/triton_model_repository
 ---
 apiVersion: v1
 kind: Service
