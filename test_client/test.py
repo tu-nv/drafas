@@ -23,7 +23,7 @@ async def post_request(request_data, session: aiohttp.ClientSession, results, fa
         if request_data['file_content']:
             # form_data can be used only once, so recreate it for every request
             form_data = aiohttp.FormData()
-            form_data.add_field('audio_file', request_data['file_content'], filename="eng_male_2.wav")
+            form_data.add_field('audio_file', request_data['file_content'], filename="eng_male.wav")
             data = form_data
         else:
             data = None
