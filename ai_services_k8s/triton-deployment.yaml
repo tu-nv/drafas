@@ -25,6 +25,7 @@ spec:
         args:
         - tritonserver
         - '--model-repository=/models'
+        - '--log-verbose=1'
         resources:
           limits:
             nvidia.com/gpu: 1  # Use 1 GPU, remove this line if using CPU-only
@@ -51,6 +52,7 @@ spec:
     protocol: TCP
     port: 8000  # Expose http port
     targetPort: 8000
+    nodePort: 30800
   # - name: grpc
   #   protocol: TCP
   #   port: 8001  # Expose gRPC port
@@ -59,4 +61,5 @@ spec:
     protocol: TCP
     port: 8002  # Expose Metrics port
     targetPort: 8002
+    nodePort: 30802
   type: LoadBalancer  # Change to NodePort if not using a cloud provider with LoadBalancer support

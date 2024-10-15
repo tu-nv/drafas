@@ -38,4 +38,5 @@ spec:
     protocol: TCP
     port: 11434          # External port
     targetPort: 11434  # The port on the Ollama container
+    nodePort: 30434
   type: LoadBalancer  # Use NodePort if not on a cloud provider
