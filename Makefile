@@ -1,10 +1,17 @@
 # Variables
 REGISTRY = nvantu
 
-
-# Build the Docker image
+# Pattern rule for building, tagging, and pushing Docker images
 .PHONY: build
+build-and-push:
+	docker build -t $(IMAGE):latest docker/$(IMAGE) && \
+	docker tag $(IMAGE):latest $(REGISTRY)/$(IMAGE):latest && \
+	docker push $(REGISTRY)/$(IMAGE):latest
+
+# Targets that specify which images to build
 drafas-ollama:
-	docker build -t drafas-ollama:latest docker/drafas-ollama && \
-	docker tag drafas-ollama:latest $(REGISTRY)/drafas-ollama:latest && \
-	docker push $(REGISTRY)/drafas-ollama:latest
+	$(MAKE) build-and-push IMAGE=drafas-ollama
+
+drafas-triton:
+	$(MAKE) build-and-push IMAGE=drafas-triton
+

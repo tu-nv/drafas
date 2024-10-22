@@ -73,7 +73,7 @@ async def cal_results(results, failed_requests):
 async def main():
     parser = argparse.ArgumentParser(description='Asyncio HTTP Requests Script')
     # parser.add_argument('--url', type=str, default="http://141.223.124.62:8080", help='The URL to send requests to')
-    # parser.add_argument('--plan_file', type=str, default="plan.txt", help='relative path to the plan file')
+    parser.add_argument('--plan_file', type=str, default="plan.txt", help='relative path to the plan file')
     parser.add_argument('--test_case', type=str, default="whisper", choices=['ollama', 'triton', 'whisper'],
                         help='test case, choose between ollama, triton, whisper')
     args = parser.parse_args()
@@ -87,7 +87,7 @@ async def main():
 
     if args.test_case == 'triton':
         request_data['url'] = "http://141.223.124.62:30800/v2/models/resnet50/infer"
-        img = Image.open(f"{BASE_DIR}/cup.jpg")
+        img = Image.open(f"{BASE_DIR}/data/cup.jpg")
         # preprocessed img, FP32 formated numpy array
         data = preprocess_img(img, "float32", 224, 224)
         # data = data.tobytes()
@@ -108,8 +108,9 @@ async def main():
                 ]
             }
         # test inference
-        # response = requests.post(args.url, json=data)
+        # response = requests.post(request_data['url'], json=request_data["json"])
         # print(response.text)
+        # exit(1)
     elif args.test_case == 'ollama':
         request_data['url'] = "http://141.223.124.62:30434/api/generate"
         request_data['json'] = {
@@ -123,11 +124,8 @@ async def main():
     elif args.test_case == 'whisper':
         request_data['url'] = "http://141.223.124.62:30900/asr?output=json"
         request_data['headers'] = {'content-type': 'multipart/form-data'}
-        with open("test_client/eng_male_2.wav", "rb") as audio_file:
+        with open(f"{BASE_DIR}/data/eng_male.wav", "rb") as audio_file:
             request_data['file_content'] = audio_file.read()
-
-        # response = requests.post(args.url, files=files)
-        # print(response.text)
         # exit(0)
     else:
         print(f"Wrong test case: {args.test_case}")
