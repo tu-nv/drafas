@@ -74,8 +74,9 @@ async def main():
     parser = argparse.ArgumentParser(description='Asyncio HTTP Requests Script')
     # parser.add_argument('--url', type=str, default="http://141.223.124.62:8080", help='The URL to send requests to')
     parser.add_argument('--plan_file', type=str, default="plan.txt", help='relative path to the plan file')
-    parser.add_argument('--test_case', type=str, default="whisper", choices=['ollama', 'triton', 'whisper'],
-                        help='test case, choose between ollama, triton, whisper')
+    parser.add_argument('--test_case', type=str, default="whisper", choices=['ollama', 'triton', 'whisper', 'simulator'],
+                        help='test case, choose between ollama, triton, whisper, simulator')
+    parser.add_argument('--speed_up', type=int, default=1, help='speed up factor')
     args = parser.parse_args()
 
     request_data = {
@@ -127,6 +128,11 @@ async def main():
         with open(f"{BASE_DIR}/data/eng_male.wav", "rb") as audio_file:
             request_data['file_content'] = audio_file.read()
         # exit(0)
+    elif args.test_case == 'simulator':
+        request_data['url'] = "http://141.223.124.61:8101/process_request"
+        request_data['json'] = {
+                    "message": "hello simulator",
+                }
     else:
         print(f"Wrong test case: {args.test_case}")
         exit(1)
