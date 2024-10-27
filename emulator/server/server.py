@@ -2,7 +2,6 @@ import asyncio
 from fastapi import FastAPI, Body
 import uvicorn
 import time
-import multiprocessing
 from contextlib import asynccontextmanager
 
 
@@ -13,9 +12,21 @@ TOTAL_CPUS = 0  # cores
 TOTAL_GPUS = 16  # MPS partitions
 TOTAL_MEMORY = 102  # GBs
 
-SPEED_UP = 100 # speedup simulation
+SPEED_UP = 1 # speedup simulation
 
-def create_app(cpu_per_inst, memory_per_inst, gpu_per_inst, capacity, proc_time_cpu, proc_time_gpu, shared_resources):
+class SharedResources:
+    def __init__(self, total_cpus, total_gpus, total_memory):
+        self.cpus_used = 0.0
+        self.gpus_used = 0
+        self.memory_used = 0.0
+        self.total_cpus = total_cpus
+        self.total_gpus = total_gpus
+        self.total_memory = total_memory
+        self.lock = asyncio.Lock()
+
+shared_resources = SharedResources(TOTAL_CPUS, TOTAL_GPUS, TOTAL_MEMORY)
+
+def create_app(cpu_per_inst, memory_per_inst, gpu_per_inst, capacity, proc_time_cpu, proc_time_gpu):
     app = FastAPI()
 
     class Instance:
@@ -77,7 +88,7 @@ def create_app(cpu_per_inst, memory_per_inst, gpu_per_inst, capacity, proc_time_
             # Scale up by 1 instance
             async with instances_lock:
                 # Try to add GPU instance if resources allow
-                with shared_resources.lock:
+                async with shared_resources.lock:
                     if (shared_resources.gpus_used + gpu_per_inst <= shared_resources.total_gpus):
                         # Add GPU instance
                         shared_resources.gpus_used += gpu_per_inst
@@ -113,7 +124,7 @@ def create_app(cpu_per_inst, memory_per_inst, gpu_per_inst, capacity, proc_time_
                 # Remove an instance
                 instance_to_remove = instances.pop()
                 # Release resources
-                with shared_resources.lock:
+                async with shared_resources.lock:
                     if instance_to_remove.type == TYPE_GPU:
                         shared_resources.gpus_used -= gpu_per_inst
                     elif instance_to_remove.type == TYPE_CPU:
@@ -248,7 +259,7 @@ def create_app(cpu_per_inst, memory_per_inst, gpu_per_inst, capacity, proc_time_
             processing_times.clear()
 
         # Get remaining resources
-        with shared_resources.lock:
+        async with shared_resources.lock:
             remaining_cpus = shared_resources.total_cpus - shared_resources.cpus_used
             remaining_gpus = shared_resources.total_gpus - shared_resources.gpus_used
             remaining_memory = shared_resources.total_memory - shared_resources.memory_used
@@ -272,44 +283,21 @@ def create_app(cpu_per_inst, memory_per_inst, gpu_per_inst, capacity, proc_time_
 
     return app
 
-def run_app(cpu_per_inst, memory_per_inst, gpu_per_inst, capacity, proc_time_cpu, proc_time_gpu, port, shared_resources):
-    try:
-        app = create_app(cpu_per_inst, memory_per_inst, gpu_per_inst, capacity, proc_time_cpu, proc_time_gpu, shared_resources)
-        uvicorn.run(app, host="0.0.0.0", port=port)
-    except Exception as e:
-        print(f"Failed to start app on port {port}: {e}")
-        # Handle any necessary cleanup here
+async def run_multiple_servers(configs):
+    servers = []
+    for config in configs:
+        cpu_per_inst, memory_per_inst, gpu_per_inst, capacity, proc_time_cpu, proc_time_gpu, port = config
+        app = create_app(cpu_per_inst, memory_per_inst, gpu_per_inst, capacity, proc_time_cpu, proc_time_gpu)
+        config = uvicorn.Config(app, host="0.0.0.0", port=port, log_level="info")
+        server = uvicorn.Server(config)
+        servers.append(server.serve())
+    await asyncio.gather(*servers)
 
 if __name__ == "__main__":
-    manager = multiprocessing.Manager()
-    shared_resources = manager.Namespace()
-    shared_resources.cpus_used = 0.0
-    shared_resources.gpus_used = 0
-    shared_resources.memory_used = 0.0
-    shared_resources.total_cpus = TOTAL_CPUS
-    shared_resources.total_gpus = TOTAL_GPUS
-    shared_resources.total_memory = TOTAL_MEMORY
-    shared_resources.lock = manager.Lock()
-
-    processes = []
     configs = [
-        # (cpu_per_inst, memory_per_inst, gpu_per_inst, capacity, proc_time_cpu, proc_time_gpu, port, shared_resources),
-        (2, 4, 1, 1, 1000, 500, 8101, shared_resources),
+        # (cpu_per_inst, memory_per_inst, gpu_per_inst, capacity, proc_time_cpu, proc_time_gpu, port),
+        # ollama
+        (2, 4, 1, 2, 1000, 560, 8101),
         # Add more configurations as needed
     ]
-
-    for config in configs:
-        p = multiprocessing.Process(target=run_app, args=config)
-        p.start()
-        processes.append(p)
-
-    # Wait for all processes to finish
-    try:
-        for p in processes:
-            p.join()
-    except KeyboardInterrupt:
-        print("Shutting down...")
-        for p in processes:
-            p.terminate()
-        for p in processes:
-            p.join()
+    asyncio.run(run_multiple_servers(configs))
