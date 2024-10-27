@@ -37,6 +37,7 @@ request_data = {
 
 if args.test_case == 'triton':
     delay_sla = 1.0
+    stats_port = 8201
     request_data['url'] = "http://141.223.124.62:30800/v2/models/resnet50/infer"
     img = Image.open(f"{BASE_DIR}/data/cup.jpg")
     # preprocessed img, FP32 formated numpy array
@@ -64,6 +65,7 @@ if args.test_case == 'triton':
     # exit(1)
 elif args.test_case == 'ollama':
     delay_sla = 2.0
+    stats_port = 8202
     request_data['url'] = "http://141.223.124.62:30434/api/generate"
     request_data['json'] = {
                 "model": "llama3.2:1b-instruct-q4_K_M",
@@ -75,6 +77,7 @@ elif args.test_case == 'ollama':
             }
 elif args.test_case == 'whisper':
     delay_sla = 2.0
+    stats_port = 8203
     request_data['url'] = "http://141.223.124.62:30900/asr?output=json"
     request_data['headers'] = {'content-type': 'multipart/form-data'}
     with open(f"{BASE_DIR}/data/eng_male.wav", "rb") as audio_file:
@@ -82,18 +85,21 @@ elif args.test_case == 'whisper':
     # exit(0)
 elif args.test_case == 'emulator-triton':
     delay_sla = 1.0
+    stats_port = 8201
     request_data['url'] = "http://localhost:8102/process_request"
     request_data['json'] = {
                 "message": "hello emulator",
             }
 elif args.test_case == 'emulator-ollama':
     delay_sla = 2.0
+    stats_port = 8202
     request_data['url'] = "http://localhost:8101/process_request"
     request_data['json'] = {
                 "message": "hello emulator",
             }
 elif args.test_case == 'emulator-whisper':
     delay_sla = 2.0
+    stats_port = 8203
     request_data['url'] = "http://localhost:8103/process_request"
     request_data['json'] = {
                 "message": "hello emulator",
@@ -190,7 +196,7 @@ async def get_stats():
     }
 
 async def run_app():
-    config = uvicorn.Config(app=app, host="0.0.0.0", port=8200, loop="asyncio", lifespan="off")
+    config = uvicorn.Config(app=app, host="0.0.0.0", port=stats_port, loop="asyncio", lifespan="off")
     server = uvicorn.Server(config)
     # Run the server
     await server.serve()
