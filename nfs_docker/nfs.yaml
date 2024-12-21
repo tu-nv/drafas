@@ -11,8 +11,8 @@ services:
     # https://github.com/ehough/docker-nfs-server/issues/13
     # nfsv4 need a root exports
     # https://github.com/ehough/docker-nfs-server/issues/58
-      - NFS_EXPORT_0=/nfs/drafas *(fsid=0,rw,no_subtree_check)
-      - NFS_EXPORT_1=/nfs/drafas/nfs_docker/data *(rw,sync,no_subtree_check)
+      - NFS_EXPORT_0=/nfs/drafas 141.223.124.0/24(fsid=0,rw,no_subtree_check,no_root_squash)
+      - NFS_EXPORT_1=/nfs/drafas/nfs_docker/data 141.223.124.0/24(rw,sync,no_subtree_check,no_root_squash)
       # - NFS_EXPORT_2=/nfs/drafas *(rw,sync,no_subtree_check)
       - NFS_DISABLE_VERSION_3=1
     cap_add:

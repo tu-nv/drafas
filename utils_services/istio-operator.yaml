@@ -1,0 +1,14 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: default
+  namespace: istio-system
+spec:
+  meshConfig:
+    defaultConfig:
+      proxyStatsMatcher:
+        inclusionRegexps:
+          - "^istio_request_duration_milliseconds.*$"
+          - "^istio_requests_total$"
+          - ".*downstream_rq_active$"
+          # - ".*"

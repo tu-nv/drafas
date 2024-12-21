@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-dcgm-exporter-metrics
+  namespace: gpu-operator
+data:
+  dcgm-metrics.csv: |-
+    # If line starts with a '#' it is considered a comment
+    # DCGM FIELD, Prometheus metric type, help message
+    # DCGM_FI_DEV_SM_CLOCK, gauge, SM clock frequency (in MHz).
+    # DCGM_FI_DEV_MEM_CLOCK, gauge, Memory clock frequency (in MHz).
+    # DCGM_FI_DEV_GPU_UTIL, gauge, GPU utilization (in %).
+    # DCGM_FI_DEV_MEM_COPY_UTIL, gauge, Memory utilization (in %).
+    # DCGM_FI_DEV_FB_FREE, gauge, Framebuffer memory free (in MiB).
+    # DCGM_FI_DEV_FB_USED, gauge, Framebuffer memory used (in MiB).
+    DCGM_FI_PROF_GR_ENGINE_ACTIVE, gauge, Ratio of time the graphics engine is active

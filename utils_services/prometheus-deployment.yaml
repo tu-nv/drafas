@@ -1,0 +1,193 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoring
+  labels:
+    name: prometheus-config
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 1s
+
+    scrape_configs:
+      - job_name: gpu-metrics
+        scrape_interval: 1s
+        metrics_path: /metrics
+        scheme: http
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - gpu-operator
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_endpoints_name]
+          action: drop
+          regex: .*-node-feature-discovery-master
+        - source_labels: [__meta_kubernetes_pod_node_name]
+          action: replace
+          target_label: kubernetes_node
+        - source_labels: [__meta_kubernetes_pod_container_port_number]
+          action: keep
+          regex: 9400
+
+      # - job_name: 'linkerd'
+      #   metrics_path: /metrics
+      #   kubernetes_sd_configs:
+      #   - role: pod
+      #     namespaces:
+      #       names:
+      #       - default
+      #   relabel_configs:
+      #   # Target only Linkerd's proxy components
+      #   - source_labels: [__meta_kubernetes_pod_container_name]
+      #     action: keep
+      #     regex: linkerd-proxy
+      #   - source_labels: [__meta_kubernetes_pod_container_port_number]
+      #     action: keep
+      #     regex: 4191
+      #   - source_labels: [__meta_kubernetes_pod_label_app]
+      #     action: replace
+      #     target_label: container
+      #   metric_relabel_configs:
+      #   # Keep only request metrics: latency, request totals, failures, histogram
+      #   - source_labels: [__name__]
+      #     regex: '^(response_latency_ms.*|request_total)$'
+      #     action: keep
+      #   # Drop metrics with target_port 4191, these are not application metrics
+      #   - source_labels: [target_port]
+      #     regex: '4191'
+      #     action: drop
+
+      - job_name: 'envoy-stats'
+        metrics_path: /stats/prometheus
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_container_port_name]
+          action: keep
+          regex: '.*-envoy-prom'
+        - source_labels: [__meta_kubernetes_pod_label_app]
+          action: replace
+          target_label: container
+        - source_labels: [__meta_kubernetes_pod_container_port_number]
+          action: keep
+          regex: 15090
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: '^(istio_requests_total|istio_request_duration_milliseconds.*|envoy_http_downstream_rq_active)$'
+            action: keep
+
+      # - job_name: 'cadvisor'
+      #   scrape_interval: 1s
+      #   metrics_path: /metrics/cadvisor
+      #   scheme: https
+      #   kubernetes_sd_configs:
+      #     - role: node
+      #   tls_config:
+      #     insecure_skip_verify: true
+      #   relabel_configs:
+      #     - source_labels: [__meta_kubernetes_node_name]
+      #       target_label: instance
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      serviceAccountName: prometheus
+      containers:
+        - name: prometheus
+          image: prom/prometheus:latest
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+          ports:
+            - containerPort: 9090
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/prometheus/
+      volumes:
+        - name: config-volume
+          configMap:
+            name: prometheus-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 9090
+      targetPort: 9090
+      nodePort: 30090
+  selector:
+    app: prometheus
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/metrics
+      - services
+      - endpoints
+      - pods
+      - namespaces
+    verbs: ["get", "list", "watch"]
+  - apiGroups:
+      - extensions
+      - networking.k8s.io
+    resources:
+      - ingresses
+    verbs: ["get", "list", "watch"]
+  - nonResourceURLs: ["/metrics", "/metrics/cadvisor"]
+    verbs: ["get"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: monitoring
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: prometheus-sa-token
+  namespace: monitoring
+  annotations:
+    kubernetes.io/service-account.name: prometheus
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: monitoring

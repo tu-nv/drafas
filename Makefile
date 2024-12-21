@@ -12,6 +12,9 @@ build-and-push:
 drafas-ollama:
 	$(MAKE) build-and-push IMAGE=drafas-ollama
 
-drafas-triton:
-	$(MAKE) build-and-push IMAGE=drafas-triton
+drafas-coqui:
+	$(MAKE) build-and-push IMAGE=drafas-coqui
+
+drafas-pytorch:
+	$(MAKE) build-and-push IMAGE=drafas-pytorch
 

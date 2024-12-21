@@ -1,0 +1,28 @@
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: custom-metrics
+  namespace: istio-system
+spec:
+  metrics:
+    - providers:
+        - name: prometheus
+      overrides:
+        - disabled: true
+          match:
+            mode: CLIENT_AND_SERVER
+            metric: REQUEST_SIZE
+        - disabled: true
+          match:
+            mode: CLIENT_AND_SERVER
+            metric: RESPONSE_SIZE
+        # - disabled: false
+        #   match:
+        #     mode: CLIENT_AND_SERVER
+        #     metric: REQUEST_COUNT
+        # - disabled: false
+        #   match:
+        #     mode: CLIENT_AND_SERVER
+        #     metric: REQUEST_DURATION
+
+
