@@ -79,3 +79,6 @@ taskset -c 2-3 python drl/drl.py --mode train --service ollama
 # for custom train command, see help
 python drl/drl.py --help
 ```
+
+## Publication
+To understand how DRAFAS works, please check our publication at `to be updated`
