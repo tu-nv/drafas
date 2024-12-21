@@ -71,3 +71,11 @@ The client emulator send inference requests to the AI services. If you run the c
    # for custom client command, see help
    python client/client.py --help
    ```
+
+## Simulation
+For fast training and evaluation, we implemented a simulator in `simpy_env.py`. For training in simulator:
+```bash
+taskset -c 2-3 python drl/drl.py --mode train --service ollama
+# for custom train command, see help
+python drl/drl.py --help
+```
