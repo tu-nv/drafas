@@ -44,7 +44,7 @@ parser.add_argument('--log_dir', type=str, default="./tensorboard_log", help='te
 parser.add_argument('--log_name', type=str, default=None, help='custom tensorboard log name')
 parser.add_argument('--best_model_log_name', type=str, default=None, help='custom best model log name')
 parser.add_argument('--mode', type=str, default="train", choices=["train", "test", "real_env", "parameter_search"], help='running mode, train or test')
-parser.add_argument('--alg', type=str, default="all", choices=["drl", "threshold", "all"], help='algorithm to test')
+parser.add_argument('--alg', type=str, default="all", choices=["drl", "threshold", "static", "all"], help='algorithm to test')
 parser.add_argument('--service', type=str, default="pytorch", choices=["ollama", "whisper", "triton", "coqui", "pytorch", "all"], help='service to train')
 
 args = parser.parse_args()
@@ -83,8 +83,8 @@ for service_name, service_conf in service_configs.items():
 
     test_simpy_env = simpy.Environment()
     test_service = Service(test_simpy_env, init_inst, gpu_per_inst, capacity_per_inst, proc_time_gpu_ms, delay_sla, startup_time, rate_limit_req_per_duration, rate_limit_duration)
-    # test_client = Client(test_simpy_env, test_service, f'{BASE_DIR}/{args.test_dir}/{CUSTOM_TEST_DIR[service_name]}', req_scaling)
-    test_client = Client(test_simpy_env, test_service, f'{BASE_DIR}/{args.val_dir}', req_scaling)
+    test_client = Client(test_simpy_env, test_service, f'{BASE_DIR}/{args.test_dir}/{CUSTOM_TEST_DIR[service_name]}', req_scaling)
+    # test_client = Client(test_simpy_env, test_service, f'{BASE_DIR}/{args.val_dir}', req_scaling)
     test_env = SimpyDrafasEnv(service_name, test_simpy_env, test_service, test_client, test_services, 'test')
     test_envs[service_name] = ActionMasker(test_env, mask_fn)
     test_envs[service_name] = test_env
@@ -174,6 +174,23 @@ def test_model(service_name):
             # print(f"{service_name}: All time at step: {step}: {test_stats.summary_str()}")
         print(f"{service_name}: {test_stats.summary_str()}")
         test_stats.write_stats(f"stats/simu-TH-{service_name}.txt")
+        test_stats.clear()
+
+    if args.alg == 'all' or args.alg == 'static':
+        print("--------------static (no auto scaling)-------------")
+        obs, _ = test_envs[service_name].reset()
+        for step in range(num_test_steps):
+            sla_violation_rate = obs[-2]
+            inst_util = obs[-4]
+            num_instance = obs[-1]
+            action = 2 # maintain
+            obs, reward, terminated, truncated, info = test_envs[service_name].step(action)
+            test_stats.add_observation(obs, info)
+            if terminated or truncated:
+                obs, _ = test_envs[service_name].reset()
+            # print(f"{service_name}: All time at step: {step}: {test_stats.summary_str()}")
+        print(f"{service_name}: {test_stats.summary_str()}")
+        # test_stats.write_stats(f"stats/simu-static-{service_name}.txt")
         test_stats.clear()
 
 def test_model_real_env(service_name):
