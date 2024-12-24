@@ -167,3 +167,6 @@ logs/
 *.pdf
 *.txt
 *.pth
+~./
+best_model_logs*
+client/data
