@@ -71,6 +71,8 @@ The client emulator send inference requests to the AI services. If you run the c
    # for custom client command, see help
    python client/client.py --help
    ```
+## Network slicing
+In DRAFAS, network slicing is optional and can be created using 5G/B5G network slicing. For fast testing, two simple network slices can be created using helm chart from [gradiant repo](https://github.com/Gradiant/5g-charts), following the [tutorial](https://gradiant.github.io/5g-charts/open5gs-ueransim-gnb.html). The slice's parameters can be setup via open5GS web interface.
 
 ## Simulation
 For fast training and evaluation, we implemented a simulator in `simpy_env.py`. For training in simulator:
